@@ -335,29 +335,102 @@ function list(items) {
   return `<ul>${items.map(item => `<li>${item}</li>`).join("")}</ul>`;
 }
 
+function shortItems(items, count = 3) {
+  return items.slice(0, count).join("、");
+}
+
+function cleanSentence(text) {
+  return String(text).trim().replace(/[。；;,.，]+$/g, "");
+}
+
+function line(label, text) {
+  return `${label}：${cleanSentence(text)}。`;
+}
+
+function structuredReference(m, options = {}) {
+  const conclusion = options.conclusion || m.definition;
+  const evidence = options.evidence || shortItems(m.logic, 2);
+  const action = options.action || shortItems(m.actions, 3);
+  const risk = options.risk || m.mistakes;
+  const review = options.review || `重点看${shortItems(m.metrics, 3)}`;
+  return [
+    line("结论", conclusion),
+    line("依据", evidence),
+    line("动作", action),
+    line("风险", risk),
+    line("复盘", review)
+  ].join("\n");
+}
+
 function buildFlashCards() {
   return modules.flatMap(m => lessonCards(m));
 }
 
 function lessonCards(m) {
-  const fullFramework = [
-    `结论：${m.definition}`,
-    `判断框架：${m.logic.join("；")}`,
-    `观察指标：${m.metrics.join("；")}`,
-    `执行动作：${m.actions.join("；")}`,
-    `常见误区：${m.mistakes}`
-  ].join("\n");
+  const fullFramework = structuredReference(m, {
+    evidence: shortItems(m.logic, 3),
+    action: shortItems(m.actions, 3),
+    review: `看${shortItems(m.metrics, 4)}`
+  });
   const cards = [
     [`请完整说明第${m.day}课「${m.title}」解决什么运营问题。`, fullFramework, keyConcepts(m)],
-    [`如果领导问你“这节课到底怎么判断”，你会按什么顺序回答？`, `先给结论：${m.definition}。再讲判断框架：${m.logic.join("；")}。随后补充关键指标：${m.metrics.join("；")}。最后说明执行动作：${m.actions.join("；")}。`, keyConcepts(m)],
-    [`请用一个实际运营场景说明第${m.day}课如何落地。`, `先判断现状是否符合本课定义，再按这些动作推进：${m.actions.join("；")}。执行后用这些指标复盘：${m.metrics.join("；")}。`, [...m.actions.slice(0, 3), ...m.metrics.slice(0, 2)]],
-    [`这节课从分析到执行的完整流程是什么？`, `完整流程是：${m.actions.join("；")}。每一步都要对应数据证据和复盘标准，避免只讲概念不落动作。`, m.actions.slice(0, 5)],
-    [`这节课最容易误判的地方是什么？应该如何纠正？`, `常见误区是：${m.mistakes}。纠正方式是回到本课的判断框架、关键指标和执行动作，用数据验证，而不是凭单一现象下结论。`, [m.mistakes, ...m.metrics.slice(0, 3)]],
-    [`如果本课相关项目表现不好，你会从哪些层面归因？`, `我会先检查判断前提是否成立，再看执行动作是否到位，最后用指标定位问题：${m.metrics.join("；")}。`, m.metrics.slice(0, 5)],
-    [`请把第${m.day}课整理成一段30秒专业表达。`, m.shortSpeech, keyConcepts(m)],
-    [`请把第${m.day}课展开成2分钟专业表达。`, m.longSpeech, keyConcepts(m)],
-    [`如果同事只盯着一个指标，你会怎样把讨论拉回完整经营判断？`, `我会说明单个指标只能解释局部现象，必须同时看：${m.metrics.join("；")}。再结合行动闭环：${m.actions.join("；")}。`, [...m.metrics.slice(0, 4), ...m.actions.slice(0, 2)]],
-    [`第${m.day}课最终要沉淀成什么可复用能力？`, `可复用能力是：面对类似问题时，能先给结论，再用判断框架、指标、动作和风险边界说明方案，并在复盘中迭代。`, ["结论", "判断框架", "指标", "动作", "复盘"]]
+    [`如果领导问你“这节课到底怎么判断”，你会按什么顺序回答？`, structuredReference(m, {
+      evidence: shortItems(m.logic, 3),
+      action: shortItems(m.actions, 2),
+      review: `用${shortItems(m.metrics, 3)}验证判断`
+    }), keyConcepts(m)],
+    [`请用一个实际运营场景说明第${m.day}课如何落地。`, structuredReference(m, {
+      conclusion: `我会先判断当前问题是否属于「${m.title}」`,
+      evidence: shortItems(m.logic, 2),
+      action: shortItems(m.actions, 3),
+      review: `执行后看${shortItems(m.metrics, 3)}`
+    }), [...m.actions.slice(0, 3), ...m.metrics.slice(0, 2)]],
+    [`这节课从分析到执行的完整流程是什么？`, structuredReference(m, {
+      conclusion: "流程必须从判断开始，再进入动作和复盘",
+      evidence: shortItems(m.logic, 2),
+      action: shortItems(m.actions, 4),
+      review: `每一步对应${shortItems(m.metrics, 3)}`
+    }), m.actions.slice(0, 5)],
+    [`这节课最容易误判的地方是什么？应该如何纠正？`, structuredReference(m, {
+      conclusion: "最容易的问题是用单一现象下结论",
+      evidence: m.mistakes,
+      action: `回到${shortItems(m.logic, 2)}，再执行${shortItems(m.actions, 2)}`,
+      risk: "如果不纠正，容易把局部数据误当成整体判断",
+      review: `用${shortItems(m.metrics, 3)}复查`
+    }), [m.mistakes, ...m.metrics.slice(0, 3)]],
+    [`如果本课相关项目表现不好，你会从哪些层面归因？`, structuredReference(m, {
+      conclusion: "我会分层归因，不先怪单一因素",
+      evidence: `先看${shortItems(m.logic, 3)}`,
+      action: `再检查${shortItems(m.actions, 3)}是否做到`,
+      risk: "避免把流量、广告或价格当成唯一原因",
+      review: `最后用${shortItems(m.metrics, 4)}定位`
+    }), m.metrics.slice(0, 5)],
+    [`请把第${m.day}课整理成一段30秒专业表达。`, structuredReference(m, {
+      conclusion: m.shortSpeech,
+      evidence: shortItems(m.logic, 2),
+      action: shortItems(m.actions, 2),
+      review: `看${shortItems(m.metrics, 3)}`
+    }), keyConcepts(m)],
+    [`请把第${m.day}课展开成2分钟专业表达。`, structuredReference(m, {
+      conclusion: m.definition,
+      evidence: shortItems(m.logic, 4),
+      action: shortItems(m.actions, 4),
+      review: `按${shortItems(m.metrics, 5)}复盘`
+    }), keyConcepts(m)],
+    [`如果同事只盯着一个指标，你会怎样把讨论拉回完整经营判断？`, structuredReference(m, {
+      conclusion: "单个指标只能解释局部，不能直接代表整体结论",
+      evidence: `要同时看${shortItems(m.metrics, 4)}`,
+      action: `再结合${shortItems(m.actions, 2)}决定处理方式`,
+      risk: "只盯一个指标，容易误判方向",
+      review: "看动作后核心指标是否同步改善"
+    }), [...m.metrics.slice(0, 4), ...m.actions.slice(0, 2)]],
+    [`第${m.day}课最终要沉淀成什么可复用能力？`, structuredReference(m, {
+      conclusion: "沉淀的是清晰表达和稳定判断能力",
+      evidence: "能说清结论、依据、动作、风险和复盘",
+      action: "遇到类似问题时按同一结构输出",
+      risk: "避免只会描述现象，不会推动决策",
+      review: "看沟通后是否能形成明确下一步"
+    }), ["结论", "依据", "动作", "风险", "复盘"]]
   ];
   return cards.map(([front, back, requiredConcepts]) => ({ module: m.day, front, back, requiredConcepts }));
 }
@@ -445,10 +518,34 @@ function scoreCardAnswer() {
 function moduleSpeakingQuestions() {
   const m = modules[currentModule - 1];
   return [
-    speak("同行交流", "本课完整表达", `请完整讲清楚第${m.day}课「${m.title}」：结论、依据、动作和风险分别是什么？`, m.shortSpeech, m.longSpeech),
-    speak("领导追问", "本课完整表达", `如果领导问“这一课最重要的判断标准是什么”，你会怎样完整回答？`, `结论：${m.definition}`, `判断依据：${m.logic.join("；")}。关键指标：${m.metrics.join("；")}。落地动作：${m.actions.join("；")}。常见风险：${m.mistakes}。`),
-    speak("跨部门协作", "本课完整表达", `如果要把第${m.day}课落地到工作中，你会如何安排动作、指标和复盘？`, `先做：${m.actions.join("；")}。`, `执行时同步观察：${m.metrics.join("；")}。复盘时判断动作是否改善本课目标，并检查风险：${m.mistakes}。`),
-    speak("领导追问", "失败归因", `如果第${m.day}课相关项目表现不好，你会从哪些层面归因？`, `我会先看判断前提，再看执行动作，最后用指标定位。`, `归因顺序：判断框架是否成立：${m.logic.join("；")}。动作是否做到：${m.actions.join("；")}。指标是否支持：${m.metrics.join("；")}。`)
+    speak(
+      "同行交流",
+      "本课完整表达",
+      `请完整讲清楚第${m.day}课「${m.title}」：结论、依据、动作和风险分别是什么？`,
+      structuredReference(m),
+      structuredReference(m, { evidence: shortItems(m.logic, 4), action: shortItems(m.actions, 4), review: `按${shortItems(m.metrics, 5)}复盘` })
+    ),
+    speak(
+      "领导追问",
+      "本课完整表达",
+      `如果领导问“这一课最重要的判断标准是什么”，你会怎样完整回答？`,
+      structuredReference(m, { evidence: shortItems(m.logic, 3), action: shortItems(m.actions, 2), review: `用${shortItems(m.metrics, 3)}验证判断` }),
+      structuredReference(m, { evidence: shortItems(m.logic, 4), action: shortItems(m.actions, 4), review: `看${shortItems(m.metrics, 5)}是否同步改善` })
+    ),
+    speak(
+      "跨部门协作",
+      "本课完整表达",
+      `如果要把第${m.day}课落地到工作中，你会如何安排动作、指标和复盘？`,
+      structuredReference(m, { conclusion: `我会把第${m.day}课拆成动作、指标和复盘`, action: shortItems(m.actions, 3), review: `看${shortItems(m.metrics, 3)}` }),
+      structuredReference(m, { conclusion: `协作目标是把「${m.title}」落到可执行任务`, evidence: shortItems(m.logic, 3), action: shortItems(m.actions, 4), review: `按${shortItems(m.metrics, 4)}复盘` })
+    ),
+    speak(
+      "领导追问",
+      "失败归因",
+      `如果第${m.day}课相关项目表现不好，你会从哪些层面归因？`,
+      structuredReference(m, { conclusion: "我会分层归因，不先怪单一因素", evidence: shortItems(m.logic, 3), action: `检查${shortItems(m.actions, 3)}是否做到`, risk: "避免把流量、广告或价格当成唯一原因", review: `用${shortItems(m.metrics, 4)}定位` }),
+      structuredReference(m, { conclusion: "失败归因要先回到判断框架", evidence: shortItems(m.logic, 4), action: `逐项检查${shortItems(m.actions, 4)}`, risk: m.mistakes, review: `用${shortItems(m.metrics, 5)}确认真实原因` })
+    )
   ];
 }
 
@@ -513,7 +610,7 @@ function submitWrittenAnswer() {
 
 function renderReferenceAnswer(userAnswer = "") {
   $("referenceAnswer").innerHTML = `${userAnswer ? `<div class="user-answer"><h3>你的文字答案</h3>${escapeHtml(userAnswer)}</div>` : ""}
-    <h3>参考表达</h3><p>${currentSpeak.shortAnswer}</p><p><b>展开时可补充：</b>${currentSpeak.longAnswer}</p>`;
+    <h3>参考表达</h3>${formatReferenceHtml(currentSpeak.shortAnswer)}<p><b>展开时可补充：</b></p>${formatReferenceHtml(currentSpeak.longAnswer)}`;
 }
 
 function renderScoreInputs() {
@@ -599,19 +696,34 @@ function moduleQuizQuestions() {
       `第${m.day}课「${m.title}」最正确的学习方式是什么？`,
       ["只背一个指标，遇到问题时直接套用", "先讲结论，再结合判断框架、指标、动作和风险完整表达", "只看销量或ACOS，哪个变化大就优先处理", "先找一个竞品动作照抄，再看结果"],
       1,
-      `本课训练的是完整判断：${m.definition}`,
+      structuredReference(m, { action: "用结论、依据、动作、风险、复盘表达", review: "看自己是否能清楚复述" }),
       m.day
     ),
     fillQuiz(
       `补全第${m.day}课的完整判断框架：至少写出两个核心逻辑和两个关键指标。`,
       [...m.logic.slice(0, 2), ...m.metrics.slice(0, 2)],
-      `核心逻辑：${m.logic.join("；")}。关键指标：${m.metrics.join("；")}。`,
+      structuredReference(m, { conclusion: "本题要补全判断框架", evidence: shortItems(m.logic, 3), action: "写出核心逻辑和关键指标", risk: "不要只写一个零散指标", review: `参考${shortItems(m.metrics, 4)}` }),
       "填空题不强求顺序，重点是覆盖本课核心逻辑和关键指标。",
       m.day
     ),
-    essayQuiz(`请完整概括第${m.day}课「${m.title}」的核心判断：结论、依据、动作分别是什么？`, m.shortSpeech, "回答应包含本课核心结论、至少一个判断依据和一个落地动作。", m.day),
-    essayQuiz(`第${m.day}课常见误区是什么？如果遇到这个误区，你会如何纠正？`, `${m.mistakes}。纠正方式：先回到数据、指标和实际动作，不用单一表象下结论。`, "回答应包含误区、纠正方法和复盘标准。", m.day),
-    essayQuiz(`把第${m.day}课落地到工作中，你会先做哪三件事？分别看什么指标？`, `先做：${m.actions.join("；")}。同步观察：${m.metrics.join("；")}。`, "回答应包含可执行动作和对应指标，而不是只讲概念。", m.day)
+    essayQuiz(
+      `请完整概括第${m.day}课「${m.title}」的核心判断：结论、依据、动作分别是什么？`,
+      structuredReference(m, { evidence: shortItems(m.logic, 3), action: shortItems(m.actions, 3), review: `看${shortItems(m.metrics, 3)}` }),
+      "回答应包含本课核心结论、至少一个判断依据和一个落地动作。",
+      m.day
+    ),
+    essayQuiz(
+      `第${m.day}课常见误区是什么？如果遇到这个误区，你会如何纠正？`,
+      structuredReference(m, { conclusion: "常见误区会导致判断失真", evidence: m.mistakes, action: `回到${shortItems(m.logic, 2)}，再执行${shortItems(m.actions, 2)}`, risk: "不要用单一表象下结论", review: `用${shortItems(m.metrics, 3)}复查` }),
+      "回答应包含误区、纠正方法和复盘标准。",
+      m.day
+    ),
+    essayQuiz(
+      `把第${m.day}课落地到工作中，你会先做哪三件事？分别看什么指标？`,
+      structuredReference(m, { conclusion: "落地要先变成可执行动作", evidence: shortItems(m.logic, 2), action: shortItems(m.actions, 3), review: `看${shortItems(m.metrics, 4)}` }),
+      "回答应包含可执行动作和对应指标，而不是只讲概念。",
+      m.day
+    )
   ];
 }
 
@@ -641,7 +753,7 @@ function renderQuiz() {
   } else if (type === "fill") {
     answerArea = `<input id="quizTextAnswer" class="quiz-text-input" type="text" placeholder="填写完整公式或关键词"><p class="quiz-hint">多个空可以直接写在同一句中，顺序不限。</p>`;
   } else {
-    answerArea = `<textarea id="quizTextAnswer" class="quiz-text-input" placeholder="请写出你的判断、依据、处理动作和风险复盘..."></textarea><p class="quiz-hint">系统按关键概念覆盖率和答案完整度进行本地评分。</p><details class="quiz-answer-hint"><summary>查看参考答案提示</summary><p>${q.reference}</p></details>`;
+    answerArea = `<textarea id="quizTextAnswer" class="quiz-text-input" placeholder="请写出你的判断、依据、处理动作和风险复盘..."></textarea><p class="quiz-hint">系统按关键概念覆盖率和答案完整度进行本地评分。</p><details class="quiz-answer-hint"><summary>查看参考答案提示</summary>${formatReferenceHtml(q.reference)}</details>`;
   }
   $("quizCard").innerHTML = `<span class="quiz-type">${typeLabel}</span><h3>${q.question}</h3>${answerArea}`;
   if (type === "choice") {
@@ -680,7 +792,7 @@ function submitQuiz() {
       const matched = q.keywords.filter(keyword => normalized.includes(normalizeText(keyword)));
       const accuracy = Math.round(matched.length / q.keywords.length * 100);
       correct = matched.length >= Math.ceil(q.keywords.length * 0.6);
-      feedback = `<b>${correct ? "填空基本正确" : `准确度：${accuracy}%`}</b><br>已识别：${matched.length ? matched.join("、") : "暂无"}<br>参考答案：${q.reference}<br>${q.explanation}`;
+      feedback = `<b>${correct ? "填空基本正确" : `准确度：${accuracy}%`}</b><br>已识别：${matched.length ? matched.join("、") : "暂无"}<br><b>参考答案：</b>${formatReferenceHtml(q.reference)}${q.explanation}`;
     } else {
       const result = assessAnswer(answer, q.reference);
       correct = result.total >= 70;
@@ -831,10 +943,10 @@ function scoreMarkup(result, compact = false, reference = "", explanation = "") 
       <div><span>准确度</span><strong>${result.accuracy}%</strong></div>
       <div><span>完整度</span><strong>${result.completeness}%</strong></div>
     </div>
-    <p class="score-feedback"><b>已覆盖：</b>${result.matched.length ? result.matched.join("、") : "暂未识别到关键概念"}<br>
+    <div class="score-feedback"><b>已覆盖：</b>${result.matched.length ? result.matched.join("、") : "暂未识别到关键概念"}<br>
     <b>${result.missed.length ? "建议补充" : "评分说明"}：</b>${result.missed.length ? result.missed.join("、") : "核心答案已完整；扩展内容只用于帮助表达，不会强行扣分。"}<br>
-    ${reference ? `<b>参考答案：</b>${reference}<br>${explanation}<br>` : ""}
-    <small>本评分采用本地关键词、同义表达和长度规则，仅用于训练。</small></p>`;
+    ${reference ? `<b>参考答案：</b>${formatReferenceHtml(reference)}${explanation}<br>` : ""}
+    <small>本评分采用本地关键词、同义表达和长度规则，仅用于训练。</small></div>`;
 }
 
 function addMistake(id, type, question, answer, shouldSave = true) {
@@ -930,6 +1042,10 @@ function resetProgress() {
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
+}
+
+function formatReferenceHtml(value) {
+  return `<p class="structured-reference">${escapeHtml(value).replace(/\n/g, "<br>")}</p>`;
 }
 
 function clamp(value, min, max) {

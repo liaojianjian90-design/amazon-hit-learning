@@ -410,19 +410,198 @@ function buildFlashCards() {
 }
 
 function lessonCards(m) {
+  const prompts = lessonCardPrompts(m);
   const cards = [
-    [`第${m.day}课「${m.title}」的一句话定义是什么？`, m.definition, extractConcepts(m.definition)],
-    [`第${m.day}课「${m.title}」的核心逻辑是什么？`, m.logic.join("；"), m.logic],
-    [`第${m.day}课「${m.title}」应该关注哪些关键指标？`, m.metrics.join("、"), m.metrics],
-    [`第${m.day}课「${m.title}」的实际动作是什么？`, m.actions.join("；"), m.actions],
-    [`第${m.day}课「${m.title}」的常见误区是什么？`, m.mistakes, extractConcepts(m.mistakes)],
-    [`第${m.day}课的30秒表达怎么说？`, m.shortSpeech, keyConcepts(m)],
-    [`第${m.day}课的2分钟专业表达怎么说？`, m.longSpeech, keyConcepts(m)],
-    [`如果领导问第${m.day}课“核心判断是什么”，直接回答哪一句？`, m.definition, extractConcepts(m.definition)],
-    [`如果同事问第${m.day}课“要看什么数据”，直接回答什么？`, m.metrics.join("、"), m.metrics],
-    [`如果要把第${m.day}课落地执行，直接回答什么？`, m.actions.join("；"), m.actions]
+    [prompts.definition, m.definition, extractConcepts(m.definition)],
+    [prompts.logic, m.logic.join("；"), m.logic],
+    [prompts.metrics, m.metrics.join("、"), m.metrics],
+    [prompts.actions, m.actions.join("；"), m.actions],
+    [prompts.mistakes, m.mistakes, extractConcepts(m.mistakes)],
+    [prompts.shortSpeech, timedAnswer("30秒回答", m.shortSpeech), keyConcepts(m)],
+    [prompts.longSpeech, timedAnswer("2分钟回答", m.longSpeech), keyConcepts(m)],
+    [prompts.coreJudgment, m.definition, extractConcepts(m.definition)],
+    [prompts.dataQuestion, m.metrics.join("、"), m.metrics],
+    [prompts.executionQuestion, m.actions.join("；"), m.actions]
   ];
   return cards.map(([front, back, requiredConcepts]) => ({ module: m.day, front, back, requiredConcepts }));
+}
+
+function timedAnswer(label, text) {
+  return `${label}：${text}`;
+}
+
+function lessonCardPrompts(m) {
+  const promptMap = {
+    1: {
+      definition: "判断一个ASIN是不是亚马逊爆款，你会先怎么定义？",
+      logic: "判断一个ASIN能不能成为可持续爆款，要看哪些核心逻辑？",
+      metrics: "判断一个ASIN是否健康增长，你会重点看哪些指标？",
+      actions: "如果要打造一个爆款ASIN，你会先做哪些动作？",
+      mistakes: "判断爆款时，最容易犯的误区是什么？",
+      shortSpeech: "有人问你什么是亚马逊爆款，你用30秒怎么回答？",
+      longSpeech: "判断一个ASIN是不是亚马逊爆款，你用2分钟怎么表达？",
+      coreJudgment: "领导问你爆款的核心判断标准是什么，你直接怎么回答？",
+      dataQuestion: "复盘一个爆款ASIN时，你会让同事先拉哪些数据？",
+      executionQuestion: "从0到1打造爆款ASIN，你会先推进哪些工作？"
+    },
+    2: {
+      definition: "判断一个类目值不值得进入，你会先怎么定义类目机会？",
+      logic: "判断类目机会时，不能只看销量，还要看哪些逻辑？",
+      metrics: "做类目机会分析时，你会重点看哪些数据？",
+      actions: "分析一个新类目时，你会先做哪些动作？",
+      mistakes: "判断类目机会时，最容易犯的误区是什么？",
+      shortSpeech: "同事问你怎么判断类目机会，你用30秒怎么说？",
+      longSpeech: "领导让你说明一个类目是否值得进入，你用2分钟怎么表达？",
+      coreJudgment: "领导问你类目机会的核心判断是什么，你直接怎么回答？",
+      dataQuestion: "做类目调研时，你会让同事先准备哪些数据？",
+      executionQuestion: "如果今天要启动类目分析，你会先做哪几件事？"
+    },
+    3: {
+      definition: "做关键词研究时，你会先怎么定义关键词研究的价值？",
+      logic: "判断一组关键词有没有运营价值，要看哪些逻辑？",
+      metrics: "分析关键词效果时，你会重点看哪些指标？",
+      actions: "搭建关键词库和广告验证时，你会做哪些动作？",
+      mistakes: "做关键词研究时，最容易犯的误区是什么？",
+      shortSpeech: "同事问你关键词研究怎么做，你用30秒怎么回答？",
+      longSpeech: "领导让你讲清关键词研究到广告落地的过程，你用2分钟怎么表达？",
+      coreJudgment: "判断关键词有没有价值，你会先说哪句核心判断？",
+      dataQuestion: "分析关键词时，你会让同事先拉哪些数据？",
+      executionQuestion: "如果要把关键词研究落地，你会先推进哪些动作？"
+    },
+    4: {
+      definition: "做竞品拆解时，你会先怎么定义竞品拆解的目的？",
+      logic: "拆一个竞品时，你会从哪些逻辑判断机会？",
+      metrics: "做竞品和Review拆解时，你会重点看哪些指标？",
+      actions: "拆解Top竞品时，你会先做哪些动作？",
+      mistakes: "竞品拆解最容易走偏的地方是什么？",
+      shortSpeech: "同事问你竞品拆解怎么做，你用30秒怎么回答？",
+      longSpeech: "领导让你完整说明竞品拆解方法，你用2分钟怎么表达？",
+      coreJudgment: "竞品拆解的核心判断是什么，你直接怎么说？",
+      dataQuestion: "拆竞品前，你会让同事先准备哪些资料和数据？",
+      executionQuestion: "如果今天要拆一个主竞品，你会先做哪几步？"
+    },
+    5: {
+      definition: "做产品定位时，你会先怎么定义产品定位和变体价格结构？",
+      logic: "判断产品定位是否清晰，要看哪些逻辑？",
+      metrics: "分析变体和价格结构时，你会重点看哪些指标？",
+      actions: "规划产品定位、变体和价格时，你会先做哪些动作？",
+      mistakes: "做变体和价格结构时，最容易犯的误区是什么？",
+      shortSpeech: "同事问你产品定位怎么做，你用30秒怎么回答？",
+      longSpeech: "领导让你说明产品定位、变体和价格结构，你用2分钟怎么表达？",
+      coreJudgment: "判断一个产品定位是否成立，你会先说哪句核心判断？",
+      dataQuestion: "分析变体表现时，你会让同事先拉哪些数据？",
+      executionQuestion: "如果要重新梳理一个产品线，你会先做哪些动作？"
+    },
+    6: {
+      definition: "判断广告预算是否合理时，你会怎么定义ACOS、TACOS和盈亏平衡ACOS的关系？",
+      logic: "判断广告好不好，为什么不能只看ACOS？还要看哪些逻辑？",
+      metrics: "分析利润和广告预算时，你会重点看哪些指标？",
+      actions: "做广告预算和盈亏测算时，你会先做哪些动作？",
+      mistakes: "判断广告效率时，最容易犯的误区是什么？",
+      shortSpeech: "同事问你ACOS高是不是一定不好，你用30秒怎么回答？",
+      longSpeech: "领导让你解释广告预算和盈亏平衡ACOS，你用2分钟怎么表达？",
+      coreJudgment: "判断广告能不能继续投，你会先说哪句核心判断？",
+      dataQuestion: "分析广告利润时，你会让同事先准备哪些数据？",
+      executionQuestion: "如果要重新设定广告预算，你会先做哪些动作？"
+    },
+    7: {
+      definition: "判断Listing是否能转化流量时，你会先怎么定义Listing的作用？",
+      logic: "判断Listing内容是否有效，要看哪些转化逻辑？",
+      metrics: "分析Listing表现时，你会重点看哪些指标？",
+      actions: "优化Listing时，你会先做哪些动作？",
+      mistakes: "做Listing优化时，最容易犯的误区是什么？",
+      shortSpeech: "同事问你Listing优化怎么做，你用30秒怎么回答？",
+      longSpeech: "领导让你完整说明Listing转化逻辑，你用2分钟怎么表达？",
+      coreJudgment: "判断Listing好不好，你会先说哪句核心判断？",
+      dataQuestion: "分析Listing问题时，你会让同事先拉哪些数据？",
+      executionQuestion: "如果今天要优化一个Listing，你会先做哪些动作？"
+    },
+    8: {
+      definition: "搭建SP广告时，你会先怎么定义广告结构的作用？",
+      logic: "判断SP广告结构是否合理，要看哪些逻辑？",
+      metrics: "分析SP广告结构时，你会重点看哪些指标？",
+      actions: "搭建和优化SP广告结构时，你会先做哪些动作？",
+      mistakes: "做SP广告结构时，最容易犯的误区是什么？",
+      shortSpeech: "同事问你SP广告结构怎么搭，你用30秒怎么回答？",
+      longSpeech: "领导让你完整说明SP广告结构，你用2分钟怎么表达？",
+      coreJudgment: "判断一个广告结构是否清晰，你会先说哪句核心判断？",
+      dataQuestion: "分析广告结构时，你会让同事先拉哪些数据？",
+      executionQuestion: "如果要重构广告结构，你会先做哪些动作？"
+    },
+    9: {
+      definition: "做搜索词优化时，你会先怎么定义搜索词分析的目的？",
+      logic: "判断一个搜索词该加价、降价、迁移还是否定，要看哪些逻辑？",
+      metrics: "分析搜索词表现时，你会重点看哪些指标？",
+      actions: "优化搜索词报告时，你会先做哪些动作？",
+      mistakes: "做搜索词优化时，最容易犯的误区是什么？",
+      shortSpeech: "同事问你搜索词怎么优化，你用30秒怎么回答？",
+      longSpeech: "领导让你说明搜索词分析和广告优化，你用2分钟怎么表达？",
+      coreJudgment: "判断搜索词有没有价值，你会先说哪句核心判断？",
+      dataQuestion: "分析搜索词时，你会让同事先拉哪些数据？",
+      executionQuestion: "如果今天要优化搜索词，你会先做哪些动作？"
+    },
+    10: {
+      definition: "做新品评价运营时，你会先怎么定义评价、退货和合规的关系？",
+      logic: "判断评价运营是否健康，要看哪些逻辑？",
+      metrics: "分析评价、退货和VoC时，你会重点看哪些指标？",
+      actions: "合规积累评价和处理反馈时，你会先做哪些动作？",
+      mistakes: "做评价运营时，最容易触碰的误区是什么？",
+      shortSpeech: "同事问你新品怎么合规积累评价，你用30秒怎么回答？",
+      longSpeech: "领导让你说明Vine、评价、退货和合规，你用2分钟怎么表达？",
+      coreJudgment: "判断评价运营是否合规，你会先说哪句核心判断？",
+      dataQuestion: "分析评价问题时，你会让同事先准备哪些数据？",
+      executionQuestion: "如果新品要启动评价运营，你会先做哪些动作？"
+    },
+    11: {
+      definition: "判断库存能不能支撑放量时，你会先怎么定义FBA库存管理？",
+      logic: "判断是否有断货风险，要看哪些逻辑？",
+      metrics: "分析库存和补货风险时，你会重点看哪些指标？",
+      actions: "做FBA库存和补货管理时，你会先做哪些动作？",
+      mistakes: "判断库存风险时，最容易犯的误区是什么？",
+      shortSpeech: "同事问你库存会怎么影响广告放量，你用30秒怎么回答？",
+      longSpeech: "领导让你说明FBA库存、补货和断货风险，你用2分钟怎么表达？",
+      coreJudgment: "判断库存是否安全，你会先说哪句核心判断？",
+      dataQuestion: "分析断货风险时，你会让同事先拉哪些数据？",
+      executionQuestion: "如果发现库存紧张，你会先做哪些动作？"
+    },
+    12: {
+      definition: "判断一个ASIN能不能放量时，你会先怎么定义放量门槛？",
+      logic: "判断放量是否安全，要看哪些逻辑？",
+      metrics: "放量过程中，你会重点看哪些指标？",
+      actions: "准备放量和异常诊断时，你会先做哪些动作？",
+      mistakes: "放量时最容易犯的误区是什么？",
+      shortSpeech: "同事问你什么时候可以放量，你用30秒怎么回答？",
+      longSpeech: "领导让你说明放量门槛和异常诊断，你用2分钟怎么表达？",
+      coreJudgment: "判断能不能加预算放量，你会先说哪句核心判断？",
+      dataQuestion: "诊断放量异常时，你会让同事先拉哪些数据？",
+      executionQuestion: "如果准备给一个ASIN放量，你会先做哪些动作？"
+    },
+    13: {
+      definition: "复盘NanoSteamer案例时，你会先怎么概括它的关键？",
+      logic: "NanoSteamer从失败到成功，核心逻辑是什么？",
+      metrics: "复盘这个案例时，你会重点关注哪些指标或信号？",
+      actions: "如果借鉴NanoSteamer案例，你会先做哪些动作？",
+      mistakes: "复盘这个案例时，最容易误解的地方是什么？",
+      shortSpeech: "同事问你NanoSteamer案例说明了什么，你用30秒怎么回答？",
+      longSpeech: "领导让你完整复盘NanoSteamer案例，你用2分钟怎么表达？",
+      coreJudgment: "NanoSteamer案例的核心判断是什么，你直接怎么说？",
+      dataQuestion: "复盘类似失败项目时，你会让同事先准备哪些数据？",
+      executionQuestion: "如果一个产品首代失败，你会借鉴这个案例先做哪些动作？"
+    },
+    14: {
+      definition: "做运营汇报时，你会先怎么定义专业表达？",
+      logic: "判断一段运营表达是否专业，要看哪些逻辑？",
+      metrics: "评估一次汇报是否有效，你会看哪些结果指标？",
+      actions: "准备专业交流或汇报时，你会先做哪些动作？",
+      mistakes: "运营沟通时，最容易犯的表达误区是什么？",
+      shortSpeech: "同事问你怎么把运营判断讲清楚，你用30秒怎么回答？",
+      longSpeech: "领导让你模拟一次专业运营交流，你用2分钟怎么表达？",
+      coreJudgment: "专业表达的核心标准是什么，你直接怎么说？",
+      dataQuestion: "准备运营汇报前，你会先整理哪些信息？",
+      executionQuestion: "如果明天要做一次运营汇报，你会先做哪些动作？"
+    }
+  };
+  return promptMap[m.day];
 }
 
 function keyConcepts(m) {
@@ -512,8 +691,8 @@ function moduleSpeakingQuestions() {
       "同行交流",
       "系统学习原文",
       `请用系统学习里的30秒表达说明第${m.day}课「${m.title}」。`,
-      m.shortSpeech,
-      m.longSpeech
+      timedAnswer("30秒回答", m.shortSpeech),
+      timedAnswer("2分钟回答", m.longSpeech)
     ),
     speak(
       "领导追问",

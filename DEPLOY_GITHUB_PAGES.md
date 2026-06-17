@@ -14,6 +14,9 @@
    - `README.md`
    - `.nojekyll`
    - `404.html`
+   - `manifest.webmanifest`
+   - `service-worker.js`
+   - `icons/icon.svg`
 5. 进入仓库 `Settings` → `Pages`。
 6. `Build and deployment` 选择：
    - Source: `Deploy from a branch`
@@ -44,6 +47,15 @@ git push -u origin main
 ## 手机访问
 
 发布成功后，把 GitHub Pages 网址发到手机微信、浏览器或备忘录中，手机打开即可使用。
+
+## 安装到主屏幕
+
+发布成功并等待几分钟后，在手机 Chrome 打开 GitHub Pages 网址：
+
+1. 点击浏览器右上角菜单。
+2. 如果看到 `安装应用`，直接点击安装。
+3. 如果只看到 `添加到主屏幕`，也可以点击，它会把网页入口放到手机桌面。
+4. 如果仍然没有安装入口，先刷新页面，或关闭再重新打开一次；Chrome 可能需要先加载 `manifest.webmanifest` 和 `service-worker.js`。
 
 ## 关于登录和进度同步
 

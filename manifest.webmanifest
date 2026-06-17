@@ -1,0 +1,19 @@
+{
+  "name": "亚马逊爆款运营训练场",
+  "short_name": "爆款训练",
+  "description": "亚马逊爆款运营14天学习、闪卡、测验和案例训练工具。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f0e8",
+  "theme_color": "#174d3b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

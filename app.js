@@ -343,23 +343,66 @@ function cleanSentence(text) {
   return String(text).trim().replace(/[。；;,.，]+$/g, "");
 }
 
-function line(label, text) {
-  return `${label}：${cleanSentence(text)}。`;
+function compactText(text, count = 2) {
+  return cleanSentence(text)
+    .split(/[、，；]/)
+    .map(item => item.trim())
+    .filter(Boolean)
+    .slice(0, count)
+    .join("、");
+}
+
+function naturalStart(text) {
+  const value = cleanSentence(text);
+  return /^我/.test(value) ? value : `我认为${value}`;
+}
+
+function reviewClause(text) {
+  const value = compactText(text, 2);
+  if (/^(看|重点看|按|用|参考|每一步|最后)/.test(value)) return value;
+  return `用${value}来复盘`;
+}
+
+function actionClause(text) {
+  const value = compactText(text, 2);
+  if (/^(检查|回到|写出|用|逐项|执行|观察|分析|判断|确认)/.test(value)) return value;
+  return `从${value}入手`;
+}
+
+function riskClause(text) {
+  const value = compactText(text, 1);
+  if (/^避免/.test(value)) return value;
+  return `避免${value}`;
+}
+
+function conciseConclusion(m, fallback) {
+  const custom = {
+    1: "亚马逊爆款不是单纯销量高，而是能持续拿流量、稳转化、控利润和库存的核心ASIN",
+    2: "类目机会不是销量越大越好，而是需求、竞争、利润和进入能力同时匹配",
+    3: "关键词研究不是堆词，而是把真实搜索需求转成Listing和广告动作",
+    4: "竞品拆解不是照抄，而是找到市场门槛、用户痛点和我方突破口",
+    5: "产品定位要说清卖给谁、解决什么场景，以及不同变体承担什么角色",
+    6: "广告预算不能只看ACOS，要同时看盈亏边界、TACOS和自然增长",
+    7: "Listing优化不是做得好看，而是按买家决策路径提升点击和转化",
+    8: "SP广告结构要分清拓词、验证、收割和防守，避免数据混在一起",
+    9: "搜索词优化是按相关性、转化和排名价值分层处理真实买家查询",
+    10: "评价运营不是索评技巧，而是用合规评价和退货反馈建立信任、改进产品",
+    11: "库存管理不是只看总库存，而是看FBA可售、日销、在途和补货ETA",
+    12: "放量不是简单加预算，而是在转化、利润、评价和库存都能承接时加速",
+    13: "NanoSteamer案例的重点是从首代失败中改产品，再用第二代重新验证",
+    14: "专业表达要先给结论，再讲依据、动作、风险和复盘"
+  };
+  if (!fallback || fallback === m.definition) return custom[m.day] || m.definition;
+  return compactText(fallback, 2);
 }
 
 function structuredReference(m, options = {}) {
-  const conclusion = options.conclusion || m.definition;
+  const conclusion = conciseConclusion(m, options.conclusion);
   const evidence = options.evidence || shortItems(m.logic, 2);
   const action = options.action || shortItems(m.actions, 3);
   const risk = options.risk || m.mistakes;
   const review = options.review || `重点看${shortItems(m.metrics, 3)}`;
-  return [
-    line("结论", conclusion),
-    line("依据", evidence),
-    line("动作", action),
-    line("风险", risk),
-    line("复盘", review)
-  ].join("\n");
+  return `${naturalStart(conclusion)}，核心看${compactText(evidence, 2)}。先${actionClause(action)}，${riskClause(risk)}，最后${reviewClause(review)}。`;
 }
 
 function buildFlashCards() {
@@ -367,70 +410,17 @@ function buildFlashCards() {
 }
 
 function lessonCards(m) {
-  const fullFramework = structuredReference(m, {
-    evidence: shortItems(m.logic, 3),
-    action: shortItems(m.actions, 3),
-    review: `看${shortItems(m.metrics, 4)}`
-  });
   const cards = [
-    [`请完整说明第${m.day}课「${m.title}」解决什么运营问题。`, fullFramework, keyConcepts(m)],
-    [`如果领导问你“这节课到底怎么判断”，你会按什么顺序回答？`, structuredReference(m, {
-      evidence: shortItems(m.logic, 3),
-      action: shortItems(m.actions, 2),
-      review: `用${shortItems(m.metrics, 3)}验证判断`
-    }), keyConcepts(m)],
-    [`请用一个实际运营场景说明第${m.day}课如何落地。`, structuredReference(m, {
-      conclusion: `我会先判断当前问题是否属于「${m.title}」`,
-      evidence: shortItems(m.logic, 2),
-      action: shortItems(m.actions, 3),
-      review: `执行后看${shortItems(m.metrics, 3)}`
-    }), [...m.actions.slice(0, 3), ...m.metrics.slice(0, 2)]],
-    [`这节课从分析到执行的完整流程是什么？`, structuredReference(m, {
-      conclusion: "流程必须从判断开始，再进入动作和复盘",
-      evidence: shortItems(m.logic, 2),
-      action: shortItems(m.actions, 4),
-      review: `每一步对应${shortItems(m.metrics, 3)}`
-    }), m.actions.slice(0, 5)],
-    [`这节课最容易误判的地方是什么？应该如何纠正？`, structuredReference(m, {
-      conclusion: "最容易的问题是用单一现象下结论",
-      evidence: m.mistakes,
-      action: `回到${shortItems(m.logic, 2)}，再执行${shortItems(m.actions, 2)}`,
-      risk: "如果不纠正，容易把局部数据误当成整体判断",
-      review: `用${shortItems(m.metrics, 3)}复查`
-    }), [m.mistakes, ...m.metrics.slice(0, 3)]],
-    [`如果本课相关项目表现不好，你会从哪些层面归因？`, structuredReference(m, {
-      conclusion: "我会分层归因，不先怪单一因素",
-      evidence: `先看${shortItems(m.logic, 3)}`,
-      action: `再检查${shortItems(m.actions, 3)}是否做到`,
-      risk: "避免把流量、广告或价格当成唯一原因",
-      review: `最后用${shortItems(m.metrics, 4)}定位`
-    }), m.metrics.slice(0, 5)],
-    [`请把第${m.day}课整理成一段30秒专业表达。`, structuredReference(m, {
-      conclusion: m.shortSpeech,
-      evidence: shortItems(m.logic, 2),
-      action: shortItems(m.actions, 2),
-      review: `看${shortItems(m.metrics, 3)}`
-    }), keyConcepts(m)],
-    [`请把第${m.day}课展开成2分钟专业表达。`, structuredReference(m, {
-      conclusion: m.definition,
-      evidence: shortItems(m.logic, 4),
-      action: shortItems(m.actions, 4),
-      review: `按${shortItems(m.metrics, 5)}复盘`
-    }), keyConcepts(m)],
-    [`如果同事只盯着一个指标，你会怎样把讨论拉回完整经营判断？`, structuredReference(m, {
-      conclusion: "单个指标只能解释局部，不能直接代表整体结论",
-      evidence: `要同时看${shortItems(m.metrics, 4)}`,
-      action: `再结合${shortItems(m.actions, 2)}决定处理方式`,
-      risk: "只盯一个指标，容易误判方向",
-      review: "看动作后核心指标是否同步改善"
-    }), [...m.metrics.slice(0, 4), ...m.actions.slice(0, 2)]],
-    [`第${m.day}课最终要沉淀成什么可复用能力？`, structuredReference(m, {
-      conclusion: "沉淀的是清晰表达和稳定判断能力",
-      evidence: "能说清结论、依据、动作、风险和复盘",
-      action: "遇到类似问题时按同一结构输出",
-      risk: "避免只会描述现象，不会推动决策",
-      review: "看沟通后是否能形成明确下一步"
-    }), ["结论", "依据", "动作", "风险", "复盘"]]
+    [`第${m.day}课「${m.title}」的一句话定义是什么？`, m.definition, extractConcepts(m.definition)],
+    [`第${m.day}课「${m.title}」的核心逻辑是什么？`, m.logic.join("；"), m.logic],
+    [`第${m.day}课「${m.title}」应该关注哪些关键指标？`, m.metrics.join("、"), m.metrics],
+    [`第${m.day}课「${m.title}」的实际动作是什么？`, m.actions.join("；"), m.actions],
+    [`第${m.day}课「${m.title}」的常见误区是什么？`, m.mistakes, extractConcepts(m.mistakes)],
+    [`第${m.day}课的30秒表达怎么说？`, m.shortSpeech, keyConcepts(m)],
+    [`第${m.day}课的2分钟专业表达怎么说？`, m.longSpeech, keyConcepts(m)],
+    [`如果领导问第${m.day}课“核心判断是什么”，直接回答哪一句？`, m.definition, extractConcepts(m.definition)],
+    [`如果同事问第${m.day}课“要看什么数据”，直接回答什么？`, m.metrics.join("、"), m.metrics],
+    [`如果要把第${m.day}课落地执行，直接回答什么？`, m.actions.join("；"), m.actions]
   ];
   return cards.map(([front, back, requiredConcepts]) => ({ module: m.day, front, back, requiredConcepts }));
 }
@@ -520,31 +510,31 @@ function moduleSpeakingQuestions() {
   return [
     speak(
       "同行交流",
-      "本课完整表达",
-      `请完整讲清楚第${m.day}课「${m.title}」：结论、依据、动作和风险分别是什么？`,
-      structuredReference(m),
-      structuredReference(m, { evidence: shortItems(m.logic, 4), action: shortItems(m.actions, 4), review: `按${shortItems(m.metrics, 5)}复盘` })
+      "系统学习原文",
+      `请用系统学习里的30秒表达说明第${m.day}课「${m.title}」。`,
+      m.shortSpeech,
+      m.longSpeech
     ),
     speak(
       "领导追问",
-      "本课完整表达",
-      `如果领导问“这一课最重要的判断标准是什么”，你会怎样完整回答？`,
-      structuredReference(m, { evidence: shortItems(m.logic, 3), action: shortItems(m.actions, 2), review: `用${shortItems(m.metrics, 3)}验证判断` }),
-      structuredReference(m, { evidence: shortItems(m.logic, 4), action: shortItems(m.actions, 4), review: `看${shortItems(m.metrics, 5)}是否同步改善` })
+      "系统学习原文",
+      `如果领导问“第${m.day}课的一句话定义是什么”，直接回答什么？`,
+      m.definition,
+      m.longSpeech
     ),
     speak(
       "跨部门协作",
-      "本课完整表达",
-      `如果要把第${m.day}课落地到工作中，你会如何安排动作、指标和复盘？`,
-      structuredReference(m, { conclusion: `我会把第${m.day}课拆成动作、指标和复盘`, action: shortItems(m.actions, 3), review: `看${shortItems(m.metrics, 3)}` }),
-      structuredReference(m, { conclusion: `协作目标是把「${m.title}」落到可执行任务`, evidence: shortItems(m.logic, 3), action: shortItems(m.actions, 4), review: `按${shortItems(m.metrics, 4)}复盘` })
+      "系统学习原文",
+      `如果要把第${m.day}课落地到工作中，实际动作是什么？`,
+      m.actions.join("；"),
+      `关键指标：${m.metrics.join("、")}`
     ),
     speak(
       "领导追问",
-      "失败归因",
-      `如果第${m.day}课相关项目表现不好，你会从哪些层面归因？`,
-      structuredReference(m, { conclusion: "我会分层归因，不先怪单一因素", evidence: shortItems(m.logic, 3), action: `检查${shortItems(m.actions, 3)}是否做到`, risk: "避免把流量、广告或价格当成唯一原因", review: `用${shortItems(m.metrics, 4)}定位` }),
-      structuredReference(m, { conclusion: "失败归因要先回到判断框架", evidence: shortItems(m.logic, 4), action: `逐项检查${shortItems(m.actions, 4)}`, risk: m.mistakes, review: `用${shortItems(m.metrics, 5)}确认真实原因` })
+      "系统学习原文",
+      `第${m.day}课最容易踩的误区是什么？`,
+      m.mistakes,
+      `核心逻辑：${m.logic.join("；")}`
     )
   ];
 }

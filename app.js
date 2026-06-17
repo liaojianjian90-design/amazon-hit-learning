@@ -532,7 +532,16 @@ function bindEvents() {
   document.querySelectorAll(".nav-item").forEach(btn => btn.addEventListener("click", () => switchView(btn.dataset.view)));
   document.querySelectorAll("[data-today-step]").forEach(btn => btn.addEventListener("click", () => switchView(btn.dataset.todayStep)));
   $("startToday").addEventListener("click", () => switchView("learn"));
-  $("moduleSelect").addEventListener("change", e => { currentModule = Number(e.target.value); renderLesson(); saveState(); });
+  $("moduleSelect").addEventListener("change", e => {
+    currentModule = Number(e.target.value);
+    currentCard = 0;
+    currentQuiz = 0;
+    renderLesson();
+    renderCard();
+    chooseSpeakingQuestion(false);
+    renderQuiz();
+    saveState();
+  });
   $("prevModule").addEventListener("click", () => moveModule(-1));
   $("nextModule").addEventListener("click", () => moveModule(1));
   $("markLearned").addEventListener("click", markLearned);
@@ -560,6 +569,8 @@ function switchView(name) {
   document.querySelectorAll(".nav-item").forEach(v => v.classList.toggle("active", v.dataset.view === name));
   $(`${name}View`).classList.add("active");
   if (name === "cards") { currentCard = 0; renderCard(); }
+  if (name === "speak") chooseSpeakingQuestion(false);
+  if (name === "quiz") { currentQuiz = 0; renderQuiz(); }
   if (name === "mistakes") renderMistakes();
   document.querySelector(".workspace").scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -821,7 +832,8 @@ function diceSimilarity(a, b) {
 
 function chooseSpeakingQuestion(countPractice = true) {
   const cat = $("questionCategory").value;
-  let pool = speakingQuestions.filter(q => cat === "all" || q.category === cat);
+  let pool = moduleSpeakingQuestions().filter(q => cat === "all" || q.category === cat);
+  if (!pool.length) pool = moduleSpeakingQuestions();
   const mistakeIds = new Set(state.mistakes.map(m => m.id));
   const weighted = [...pool, ...pool.filter(q => mistakeIds.has(q.id)), ...pool.filter(q => mistakeIds.has(q.id))];
   const alternatives = weighted.filter(q => q.id !== currentSpeak?.id);
@@ -837,6 +849,17 @@ function chooseSpeakingQuestion(countPractice = true) {
   $("writtenStatus").textContent = "建议先独立作答，再查看参考答案。";
   resetTimer();
   if (countPractice) { state.practiceCount++; saveState(); }
+}
+function moduleSpeakingQuestions() {
+  const lesson = modules[currentModule - 1];
+  const manual = speakingQuestions.filter(q => q.module === currentModule);
+  const generated = [
+    speak("同行交流", "本课", `请用30秒解释：${lesson.title}`, currentModule, lesson.shortSpeech, lesson.longSpeech),
+    speak("领导追问", "本课", `这一课最重要的判断标准是什么？`, currentModule, lesson.definition, `可从核心逻辑展开：${lesson.logic.join("；")}`),
+    speak("跨部门协作", "本课", `如果要把这一课落地，你会安排哪些具体动作？`, currentModule, lesson.actions.join("；"), `执行时同步观察这些指标：${lesson.metrics.join("；")}`)
+  ];
+  const byId = new Map([...manual, ...generated].map(item => [item.id, item]));
+  return [...byId.values()];
 }
 function showReference() {
   const willShow = $("referenceAnswer").hidden;
@@ -943,18 +966,20 @@ async function toggleRecording() {
 }
 
 function renderQuiz() {
-  const q = quizQuestions[currentQuiz];
+  const pool = moduleQuizQuestions();
+  if (currentQuiz >= pool.length) currentQuiz = 0;
+  const q = pool[currentQuiz];
   selectedQuizOption = null;
   const type = q.type || "choice";
   const typeLabel = { choice: "选择题", fill: "填空题", essay: "问答题" }[type];
-  $("quizProgress").textContent = `${typeLabel} · ${currentQuiz + 1} / ${quizQuestions.length}`;
+  $("quizProgress").textContent = `第${currentModule}课 · ${typeLabel} · ${currentQuiz + 1} / ${pool.length}`;
   let answerArea = "";
   if (type === "choice") {
     answerArea = q.options.map((o,i) => `<button class="option" data-option="${i}">${String.fromCharCode(65+i)}. ${o}</button>`).join("");
   } else if (type === "fill") {
     answerArea = `<input id="quizTextAnswer" class="quiz-text-input" type="text" placeholder="填写完整公式或关键词"><p class="quiz-hint">多个空可以直接写在同一句中，顺序不限。</p>`;
   } else {
-    answerArea = `<textarea id="quizTextAnswer" class="quiz-text-input" placeholder="请写出你的判断、依据和处理动作……"></textarea><p class="quiz-hint">系统按关键概念覆盖率和答案完整度进行本地评分。</p>`;
+    answerArea = `<textarea id="quizTextAnswer" class="quiz-text-input" placeholder="请写出你的判断、依据和处理动作……"></textarea><p class="quiz-hint">系统按关键概念覆盖率和答案完整度进行本地评分。</p><details class="quiz-answer-hint"><summary>查看参考答案提示</summary><p>${q.reference}</p></details>`;
   }
   $("quizCard").innerHTML = `<span class="quiz-type">${typeLabel}</span><h3>${q.question}</h3>${answerArea}`;
   if (type === "choice") {
@@ -968,7 +993,7 @@ function renderQuiz() {
   $("nextQuiz").hidden = true;
 }
 function submitQuiz() {
-  const q = quizQuestions[currentQuiz];
+  const q = moduleQuizQuestions()[currentQuiz];
   const type = q.type || "choice";
   let correct = false;
   let feedback = "";
@@ -1027,10 +1052,22 @@ function scoreTextResponse(answer, reference) {
 }
 function nextQuiz() {
   const mistakeIds = new Set(state.mistakes.map(m => m.id));
-  const weighted = quizQuestions.flatMap((q, i) => mistakeIds.has(q.id) ? [i, i, i] : [i]);
+  const pool = moduleQuizQuestions();
+  const weighted = pool.flatMap((q, i) => mistakeIds.has(q.id) ? [i, i, i] : [i]);
   const alternatives = weighted.filter(i => i !== currentQuiz);
-  currentQuiz = alternatives[Math.floor(Math.random() * alternatives.length)];
+  currentQuiz = alternatives.length ? alternatives[Math.floor(Math.random() * alternatives.length)] : 0;
   renderQuiz();
+}
+function moduleQuizQuestions() {
+  const lesson = modules[currentModule - 1];
+  const manual = quizQuestions.filter(q => q.module === currentModule);
+  const generated = [
+    essayQuiz(`请概括第${currentModule}课「${lesson.title}」的核心判断。`, lesson.shortSpeech, "回答应包含本课核心结论和至少一个判断依据。", currentModule),
+    essayQuiz(`第${currentModule}课常见误区是什么？应该如何避免？`, `${lesson.mistakes}。避免方式：先回到数据、指标和实际动作，不用单一表象下结论。`, "回答应包含误区和避免方法。", currentModule),
+    essayQuiz(`把第${currentModule}课落地到工作中，你会先做哪三件事？`, lesson.actions.join("；"), "回答应包含可执行动作，而不是只讲概念。", currentModule)
+  ];
+  const byId = new Map([...manual, ...generated].map(item => [item.id, item]));
+  return [...byId.values()];
 }
 
 function addMistake(id, type, question, answer, shouldSave = true) {

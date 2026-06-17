@@ -314,6 +314,19 @@ select {
 textarea.quiz-text-input { min-height: 150px; resize: vertical; }
 .quiz-text-input:focus { outline: 2px solid #b8d7c9; border-color: var(--green); }
 .quiz-hint { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
+.quiz-answer-hint {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px dashed #b7cfc3;
+  background: #eef6f2;
+  line-height: 1.7;
+}
+.quiz-answer-hint summary {
+  cursor: pointer;
+  color: var(--green);
+  font-weight: 800;
+}
+.quiz-answer-hint p { margin: 10px 0 0; color: #405149; }
 .option {
   width: 100%;
   margin: 6px 0;

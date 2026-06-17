@@ -1,4 +1,4 @@
-const CACHE_NAME = "amazon-hit-learning-v2";
+const CACHE_NAME = "amazon-hit-learning-v3";
 const ASSETS = [
   "./",
   "./index.html",

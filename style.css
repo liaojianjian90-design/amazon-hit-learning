@@ -130,6 +130,14 @@ main { width: min(1380px, 92vw); margin: -45px auto 70px; }
 .secondary { color: var(--green); border-color: var(--green); background: transparent; }
 .secondary:hover { background: var(--green-soft); }
 .today-main .primary { margin-top: 5px; }
+.topic-panel { margin-bottom: 24px; }
+.topic-picker { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.topic-button { padding: 20px; color: var(--ink); border: 1px solid var(--line); background: #faf8f2; text-align: left; }
+.topic-button b, .topic-button span { display: block; }
+.topic-button b { font-size: 17px; }
+.topic-button span { margin-top: 7px; color: var(--muted); font-size: 13px; }
+.topic-button.active { color: #fff; border-color: var(--green); background: var(--green); }
+.topic-button.active span { color: #dce8e2; }
 .knowledge-map { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
 .map-node {
   position: relative;
@@ -239,63 +247,18 @@ select {
 .score-summary span { color: var(--muted); font-size: 11px; }
 .score-summary strong { margin-top: 4px; font-size: 24px; }
 .score-feedback { margin: 13px 0 0; color: #405149; line-height: 1.7; }
-.question-card { padding: 28px; color: #fff; background: var(--green); }
-.question-card h3 { margin: 20px 0; font-size: clamp(24px, 3.5vw, 34px); line-height: 1.55; }
-.question-meta { display: flex; gap: 9px; }
-.question-meta span { padding: 5px 8px; color: #f6c09a; border: 1px solid rgba(255,255,255,.25); font-size: 11px; }
-.answer-structure { margin: 0; color: #dce9e3; }
-.written-answer-box {
-  margin-top: 16px;
-  padding: 22px;
-  border: 1px solid var(--line);
-  background: #faf8f2;
-}
-.written-head, .written-actions {
+.written-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
-.written-head p, .written-actions span {
+.written-actions span {
   margin: 6px 0 0;
   color: var(--muted);
   font-size: 12px;
 }
-.written-answer-box textarea {
-  width: 100%;
-  margin-top: 16px;
-  padding: 16px;
-  resize: vertical;
-  color: var(--ink);
-  border: 1px solid var(--line);
-  background: #fff;
-  line-height: 1.75;
-}
-.written-answer-box textarea:focus {
-  outline: 2px solid #b8d7c9;
-  border-color: var(--green);
-}
 .written-actions { margin-top: 12px; }
-.user-answer {
-  margin-bottom: 18px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #b7cfc3;
-  white-space: pre-wrap;
-}
-.timer-box { margin: 16px 0; padding: 22px; display: flex; align-items: center; justify-content: space-between; gap: 20px; border: 1px solid var(--line); background: #faf8f2; }
-.timer-box strong { font-size: 38px; font-variant-numeric: tabular-nums; }
-.timer-box p { flex: 1; margin: 0; color: var(--muted); font-size: 12px; }
-.timer-box audio { max-width: 250px; }
-.text-button { padding: 6px 0; color: var(--green); border: 0; border-bottom: 1px solid var(--green); background: transparent; font-weight: 800; }
-.reference-answer, .self-score { margin-top: 17px; padding: 22px; border: 1px solid #bdd2c8; background: var(--green-soft); line-height: 1.8; }
-.reference-answer h3 { margin-bottom: 10px; }
-.structured-reference {
-  margin: 8px 0 14px;
-  color: #25342f;
-  line-height: 1.75;
-}
-.score-row { display: grid; grid-template-columns: 120px 1fr 34px; gap: 12px; align-items: center; margin: 13px 0; }
-.score-row input { accent-color: var(--orange); }
 .quiz-card { padding: 25px; border: 1px solid var(--line); background: #faf8f2; }
 .quiz-card h3 { margin-bottom: 20px; line-height: 1.65; }
 .quiz-type {
@@ -381,15 +344,14 @@ footer p { margin: 5px; }
 @media (max-width: 760px) {
   .top-actions { display: none; }
   .hero { min-height: 570px; }
-  .hero-content, .section-head, .view-toolbar, .timer-box { align-items: stretch; flex-direction: column; }
-  .written-head, .written-actions { align-items: stretch; flex-direction: column; }
+  .hero-content, .section-head, .view-toolbar { align-items: stretch; flex-direction: column; }
+  .written-actions { align-items: stretch; flex-direction: column; }
   .score-summary { grid-template-columns: 1fr; }
   .hero-score { width: 100%; }
   main { width: 94vw; }
   .panel { padding: 20px; }
-  .today-grid, .lesson-grid, .case-grid { grid-template-columns: 1fr; }
+  .today-grid, .lesson-grid, .case-grid, .topic-picker { grid-template-columns: 1fr; }
   .knowledge-map, .curriculum { grid-template-columns: repeat(2, 1fr); }
   .sidebar { grid-template-columns: repeat(2, 1fr); }
   .lesson-block.full { grid-column: auto; }
-  .timer-box audio { max-width: 100%; }
 }
